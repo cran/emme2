@@ -4,6 +4,7 @@
 # Created: Ben Stabler 2/16/03 benjamin.stabler@odot.state.or.us
 # Updated: Ben Stabler 6/11/03
 # Updated: Ben Stabler 6/17/03
+# Updated: Ben Stabler 8/3/04
 
 # Copyright (C) 2002  Oregon Department of Transportation
 # This program is free software; you can redistribute it and/or
@@ -630,3 +631,21 @@ ftnode <- function(node.data, outgoing.links, jnode, mlink) {
 	ijnode <- cbind(fnode=i.nodes,tnode=j.nodes)
 	ijnode
 }
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# FUNCTION TO FORMAT A MATRIX FOR WRITING TO THE BANK 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Function to append zeros to matrix to write into databank
+formatMf <- function(data, file1) {
+     #Matrix build format is  m1 m2
+     #                        m3 m4
+     cols <- file1$global["mcent"] - ncol(data)
+     rows <- file1$global["mcent"] - nrow(data)
+     m1 <- data
+     
+     m2 <- matrix(0, nrow(m1), cols)
+     m3 <- matrix(0, rows, ncol(m1))
+     m4 <- matrix(0, rows, cols)
+     rbind(cbind(m1, m2), cbind(m3,m4)) 
+}
+

@@ -1,6 +1,6 @@
 Package: emme2
-Version: 0.2
-Date: 2003-06-17
+Version: 0.3
+Date: 2004-08-3
 Title: Read and Write to an EMME/2 databank
 Author: Ben Stabler <benjamin.stabler@odot.state.or.us>
 Maintainer: Ben Stabler <benjamin.stabler@odot.state.or.us>
@@ -9,3 +9,4 @@ Description: This package includes functions to read and write
 	to an EMME/2 databank
 License: GPL
 URL: http://www.odot.state.or.us/tddtpau/R.html
+Packaged: Fri Aug  6 09:32:27 2004; hornik
