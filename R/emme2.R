@@ -3,6 +3,7 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Created: Ben Stabler 2/16/03 benjamin.stabler@odot.state.or.us
 # Updated: Ben Stabler 6/11/03
+# Updated: Ben Stabler 6/17/03
 
 # Copyright (C) 2002  Oregon Department of Transportation
 # This program is free software; you can redistribute it and/or
@@ -406,31 +407,31 @@ read.mf <- function(numname, bank, file0, mcent, mat.dir) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # FUNCTION TO WRITE A MF TO THE DATABANK
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# write.mf does not currently work!
 
-write.mf <- function(data, numname, bank, file0, mcent, mat.dir) {
+write.mf <- function(data, numname, bank, file0, mcent, mmat, mat.dir, newname=NULL, newdesc=NULL) {
 	#data is either a vector or matrix
-	#numname is the mf number or name as a string to read in
+	#numname is the mf number or name of the existing matrix to replace
 	#bank is a string of the file name
 	#file0 is the databank metadata data frame created with read.file0()
 	#Note that EMME/2 stores mfs in row-major order
 	#mcent is the maximum number of centroids defined for the bank
 	# and is created by the read.file1 function
+	#mmat is the maximum number of matrices allowed for each type
 	#mat.dir is the matrix directory object created by read.matdir()
-	
-	#NEED TO ADD CODE TO CHANGE CFLAG bit 0 when defining a new matrix
-			
+	#newname is the new name of the matrix to write out
+	#newdesc is the new description of the matrix to write out
+				
 	#Open the databank for binary reading to find byte stream seek values
 	outfile <- file(bank, "r+b")
 
 	#Seek to full matrix file 64 position
 	mat.offset <- file0[64,1]
-	seek(infile, where=mat.offset*4, origin="start")
+	seek(outfile, where=mat.offset*4, origin="start")
 	
 	#Lookup matrix number from name
 	if (is.character(numname)) {
 		numname <- gsub(" +$","",numname)
-		number <- which(mat.dir$md[,1]==numname)
+		number <- which(mat.dir$mf[,1]==numname)
 		if (length(number)==0) { stop("Matrix Not Found") }
 	} else { number <- numname }
 			
@@ -446,6 +447,53 @@ write.mf <- function(data, numname, bank, file0, mcent, mat.dir) {
 	#Write mfnumber to the databank
 	writeBin(as.real(data), outfile, 4)
 		
+	#Seek to matrix directory file 60 position
+	mat.offset <- file0[60,1]
+	seek(outfile, where=mat.offset*4, origin="start", rw="write")
+	#Seek to mf part of cflag
+	seek(outfile, where=mmat*4*3, origin="current", rw="write")
+	#Seek to cflag entry for specifc mf and write 1 to tag matrix as defined
+	seek(outfile, where=(number-1)*4, origin="current", rw="write")
+	writeBin(as.integer(1), outfile, 1)
+	
+	if (!is.null(newname)) {
+		#Seek to matrix directory file 60 position
+		seek(outfile, where=mat.offset*4, origin="start", rw="write")
+		#Seek to name part of matrix directory
+		seek(outfile, where=(mmat*4*4)+(mmat*4*4), origin="current", rw="write")
+		
+		#Seek to name entry for mfs
+		seek(outfile, where=mmat*4*3*3, origin="current", rw="write")
+		#Seek to specific name entry for matrix
+		seek(outfile, where=(number-1)*4*3, origin="current", rw="write")
+		
+		#Create name format (2 chars 2 spaces 2 chars 2 spaces up to 12)
+		newname <- substring(newname,c(1,3,5),c(2,4,6))
+		newname <- paste(newname, collapse="  ")
+		newname <- paste(newname, paste(rep(" ",12-nchar(newname)), collapse=""), collapse="")
+		#Write matrix name (no spaces allowed)
+		writeChar(as.character(newname), outfile, 12, eos=NULL)
+	}
+	
+	if (!is.null(newdesc)) {
+		#Seek to matrix directory file 60 position
+		seek(outfile, where=mat.offset*4, origin="start", rw="write")
+		#Seek to description part of matrix directory
+		seek(outfile, where=(mmat*4*4)+(mmat*4*4)+(mmat*4*4*3), origin="current", rw="write")
+		
+		#Seek to description entry for mfs
+		seek(outfile, where=mmat*4*20*3, origin="current", rw="write")
+		#Seek to specific description entry for matrix
+		seek(outfile, where=(number-1)*4*20, origin="current", rw="write")
+		
+		#Create description format (2 chars 2 spaces 2 chars 2 spaces up to 80)
+		newdesc <- substring(newdesc,seq(1,40,2),seq(2,40,2))
+		newdesc <- paste(newdesc, collapse="  ")
+		newdesc <- paste(newdesc, paste(rep(" ",80-nchar(newdesc)), collapse=""), collapse="")
+		#Write matrix description (spaces allowed)
+		writeChar(as.character(newdesc), outfile, 80, eos=NULL)
+	}
+	
 	#Close the file connection
 	close(outfile)
 }

@@ -23,7 +23,7 @@ read.ms(bank, file0)
 read.mo(numname, bank, file0, mcent, mat.dir)
 read.md(numname, bank, file0, mcent, mat.dir) 
 read.mf(numname, bank, file0, mcent, mat.dir) 
-write.mf(data, numname, bank, file0, mcent, mat.dir)
+write.mf(data, numname, bank, file0, mcent, mmat, mat.dir, newname=NULL, newdesc=NULL)
 read.link.data(bank, scen.num, file0, mscen, mlink, mnode)
 read.nodes(bank, scen.num, file0, mscen, mlink, mnode) 
 plotLinks(link.data, nodes, centroids=F, ...)
@@ -34,7 +34,9 @@ ftnode(node.data, outgoing.links, jnode, mlink)
 	\item{file0}{Databank metadata data frame}
 	\item{mmat}{Maximum number of matrices}
 
-	\item{numname}{mf number or name as a string to read in}
+	\item{numname}{mf number or name as a string to read in or write to}
+	\item{newname}{new name of the matrix to write out}
+	\item{newdesc}{new description of the matrix to write out}
 	\item{mcent}{Maximum number of centroids}
 	\item{mat.dir}{matrix directory object}
 	\item{data}{either a vector or matrix of data to write to bank}
@@ -75,7 +77,7 @@ ftnode(node.data, outgoing.links, jnode, mlink)
 \examples{
 \dontrun{
 # Function call to create databank offset file0
-file0 <- read.file0(""emme2\\\\emme2ban")
+file0 <- read.file0("emme2\\\\emme2ban")
 
 #Function call to create file1 info (global parameters)
 file1 <- read.file1("emme2\\\\emme2ban", file0)
@@ -98,10 +100,9 @@ mf2 <- read.mf(2, "emme2\\\\emme2ban", file0, file1$global["mcent"], mat.dir)
 #Function call to read mf "opskim"
 mf2 <- read.mf("opskim", "emme2\\\\emme2ban", file0, file1$global["mcent"], mat.dir)
 
-#Function call to write mf1
-#write.mf does not currently work! 
+#Function call to write mf2
 x <- rnorm(mf2) #Random generate length(mf) numbers to write dummy data to bank
-write.mf(x, 1, "emme2\\\\emme2ban", file0, file1$global["mcent"], mat.dir)
+write.mf(x, 2, "emme2\\\\emme2ban", file0, file1$global["mcent"], file1$global["mmat"], mat.dir, newname="test", newdesc="test matrix")
 
 #Function call to read link data
 link.data <- read.link.data("emme2\\\\emme2ban", 1, file0, file1$global["mscen"], file1$global["mlink"], file1$global["mnode"])
