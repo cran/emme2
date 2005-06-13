@@ -141,7 +141,6 @@
      }
 }
 
-\author{Ben Stabler <\email{benjamin.stabler@odot.state.or.us}> \cr
-	\url{http://www.odot.state.or.us/tddtpau/R.html}
+\author{Ben Stabler <\email{benstabler@yahoo.com}> \cr
 }
 \keyword{programming}
