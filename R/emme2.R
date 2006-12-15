@@ -606,16 +606,16 @@ read.nodes <- function(bank, scen.num, file0, mscen, mlink, mnode) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # FUNCTION TO PLOT THE BASE NETWORK
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-plotLinks <- function(link.data, nodes, centroids=F, ...) {
-	if(centroids==F) { nodes <- nodes[nodes[,1]>999,] }
-	plot(nodes[,2], nodes[,3], type="n", xlab="X", ylab="Y", main=paste(city, "Network"))
-	
-	fnode.xy <- nodes[match(link.data[,1], nodes[,1]),]
-	tnode.xy <- nodes[match(link.data[,2], nodes[,1]),]
-	ftxy <- cbind(fnode.xy,tnode.xy)
-	invisible(apply(ftxy, 1, function(x) lines(x[c(2,5)], x[c(3,6)], pch=20, type="o", ...)))
+plotLinks <- function (tofrom, nodes, title, ...) 
+{
+    plot(nodes[, 2], nodes[, 3], type = "n", xlab = "X", ylab = "Y", 
+        main = title)
+    fnode.xy <- nodes[match(tofrom[, 1], nodes[, 1]), ]
+    tnode.xy <- nodes[match(tofrom[, 2], nodes[, 1]), ]
+    ftxy <- cbind(fnode.xy, tnode.xy)
+    invisible(apply(ftxy, 1, function(x) lines(x[c(2, 5)], x[c(3, 
+        6)], pch = 20, type = "o", ...)))
 }
-
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # FUNCTION TO BUILD A FNODE TNODE TABLE 
