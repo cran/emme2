@@ -393,9 +393,17 @@ read.mf <- function(numname, bank, file0, mcent, mat.dir) {
 	} else { number <- numname }
 	
 	#Seek to the specific matrix in the full matrix file
-	specific.offset <- (number-1)*mcent*mcent
-	seek(infile, where=specific.offset*4, origin="current")
-	
+	#+++++++++++++++++++++++++++++++++
+	#Start Steve Hansen Edit
+	#+++++++++++++++++++++++++++++++++
+	mf.offset <- mcent*mcent
+	iterations <- number-1
+	for (i in 1:iterations){
+		seek(infile, where=mf.offset*4, origin="current")
+	}
+	#+++++++++++++++++++++++++++++++++
+	#End Steve Hansen Edit
+	#+++++++++++++++++++++++++++++++++
 	#Read in the matrix data
 	mf.temp <- readBin(infile, real(), mcent*mcent, 4)
 	mf <- matrix(mf.temp, mcent, mcent, byrow=T)
@@ -437,9 +445,18 @@ write.mf <- function(data, numname, bank, file0, mcent, mmat, mat.dir, newname=N
 	} else { number <- numname }
 			
 	#Seek to the specific matrix in the full matrix file
-	specific.offset <- (number-1)*mcent*mcent
-	seek(outfile, where=specific.offset*4, origin="current", rw="write")
-	
+	#+++++++++++++++++++++++++++++++++
+	#Start Steve Hansen Edit
+	#+++++++++++++++++++++++++++++++++
+	mf.offset <- mcent*mcent
+	iterations <- number-1
+	for (i in 1:iterations){
+		seek(outfile, where=mf.offset*4, origin="current", rw="write")
+	}
+	#+++++++++++++++++++++++++++++++++
+	#End Steve Hansen Edit
+	#+++++++++++++++++++++++++++++++++
+
 	#If data is a matrix, then convert the matrix to vector form
 	if (is.matrix(data)) {
 		data <- as.vector(t(data))
@@ -495,6 +512,21 @@ write.mf <- function(data, numname, bank, file0, mcent, mmat, mat.dir, newname=N
 		writeChar(as.character(newdesc), outfile, 80, eos=NULL)
 	}
 	
+	#+++++++++++++++++++++++++++++++++
+	#Start Steve Hansen Edit
+	#+++++++++++++++++++++++++++++++++
+	## Write datestamp ##
+	#Seek to matrix directory file 60 position
+	mat.offset <- file0[60,1]
+	seek(outfile, where=mat.offset*4, origin="start", rw="write")
+	#Seek to part of matrix directory file that stores the timestamp for matrix_number
+	seek(outfile, where=mmat*28+(numname-1)*4, origin="current", rw="write")
+	emme2time <- get_emme2_time(Sys.time())
+	writeBin(as.integer(emme2time), outfile, 4)	
+	#+++++++++++++++++++++++++++++++++
+	#End Steve Hansen Edit
+	#+++++++++++++++++++++++++++++++++
+	
 	#Close the file connection
 	close(outfile)
 }
@@ -504,67 +536,72 @@ write.mf <- function(data, numname, bank, file0, mcent, mmat, mat.dir, newname=N
 # FUNCTION TO READ LINK SPEED, CAPACITY, AND VDF FROM A SCENARIO
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # First need to call read.file0 and read.file1 
+# Brian Gregor, Brian.J.GREGOR@odot.state.or.us
 
-read.link.data <- function(bank, scen.num, file0, mscen, mlink, mnode) {
-	#bank is a string of the file name
-	#scen.num is the scenario number to read from (in EMME/2 order - not named number)
-	#file0 is the databank metadata data frame created with read.file0()
-	#mscen is the maximum number of scenarios defined for the bank
-	#mlink is the maximum number of links defined for the bank
-	#mnode is the maximum number of nodes defined for the bank
-			
-	infile<-file(bank, "rb")
-	
-	#Read in node data
-	seek(infile, where=file0[6,1]*4, origin="start")
-	seek(infile, where=(scen.num-1)*mnode*4, origin="current")
-	node.data <- readBin(infile,integer(),mnode,4)
-	
-	#Read in "from" node data
-	seek(infile, where=file0[9,1]*4, origin="start")
-	seek(infile, where=(scen.num-1)*mnode*4, origin="current")
-	pointer.to.j.node <- readBin(infile,integer(), mnode, 4)
-	pointer.to.j.node <- diff(pointer.to.j.node)
-	
-	#Read in "to" node data
-	seek(infile, where=file0[11,1]*4, origin="start")
-	seek(infile, where=(scen.num-1)*mlink*4, origin="current")
-	j.node <- readBin(infile,integer(), mlink, 4)
+read.link.data <- function (bank, scen.num, file0, mscen, mlink, mnode){
 
-	#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	#Read in length data
-	seek(infile, where=file0[12,1]*4, origin="start")
-	seek(infile, where=(scen.num-1)*mlink*4, origin="current")
-	link.length <- readBin(infile,integer(), mlink, 4)
-	link.length <- link.length/100
-	
-	#Read in type data
-	seek(infile, where=file0[14,1]*4, origin="start")
-	seek(infile, where=(scen.num-1)*mlink*4, origin="current")
-	link.type <- readBin(infile,integer(), mlink, 4)
-	
-	#Read in num lanes and VDF data
-	# First number is the VDF and the remaining numbers are the lanes (to the tenth of an integer)
-	# For example: 390 = VDF 3 and lanes 9.0
-	seek(infile, where=file0[15,1]*4, origin="start")
-	seek(infile, where=(scen.num-1)*mlink*4, origin="current")
-	link.lanes.vdf <- readBin(infile,integer(), mlink, 4)
-	link.vdf <- as.numeric(substring(link.lanes.vdf,1,1))
-	link.lanes <- as.numeric(substring(link.lanes.vdf,2,3))/10 #divide by 10 since stored as 1.0
-	
-	#Read in ul1 data
-	seek(infile, where=file0[16,1]*4, origin="start")
-	seek(infile, where=(scen.num-1)*mlink*4, origin="current")
-	link.ul1 <- readBin(infile,real(), mlink, 4)	
-	
-	#Read in ul2 data
-	seek(infile, where=(file0[16,1]*4+mscen*mlink*4), origin="start")
-	seek(infile, where=(scen.num-1)*mlink*4, origin="current")
-	link.ul2 <- readBin(infile,real(), mlink, 4)	
-	
-	close(infile)
-	list(node.data, pointer.to.j.node, j.node, length=link.length, type=link.type, vdf=link.vdf, lanes=link.lanes, ul1=link.ul1, ul2=link.ul2)
-}
+    # Identify the file to read
+    infile <- file(bank, "rb")
+    
+    # Read the node data
+    seek(infile, where = file0[6, 1] * 4, origin = "start")
+    seek(infile, where = (scen.num - 1) * mnode * 4, origin = "current")
+    node.data <- readBin(infile, integer(), mnode, 4)
+
+    # Read the pointer to j node
+    seek(infile, where = file0[9, 1] * 4, origin = "start")
+    seek(infile, where = (scen.num - 1) * mnode * 4, origin = "current")
+    pointer.to.j.node <- readBin(infile, integer(), mnode, 4)
+    pointer.to.j.node <- diff(pointer.to.j.node)
+
+    # Read the j node
+    seek(infile, where = file0[11, 1] * 4, origin = "start")
+    seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
+    j.node <- readBin(infile, integer(), mlink, 4)
+
+    # Read the link length
+    seek(infile, where = file0[12, 1] * 4, origin = "start")
+    seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
+    link.length <- readBin(infile, integer(), mlink, 4)
+    link.length <- link.length/100
+
+    # Read the link type
+    seek(infile, where = file0[14, 1] * 4, origin = "start")
+    seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
+    link.type <- readBin(infile, integer(), mlink, 4)
+
+    # Read the vdf and number of lanes
+    seek(infile, where = file0[15, 1] * 4, origin = "start")
+    seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
+    link.lanes.vdf <- readBin(infile, integer(), mlink, 4)
+    link.vdf <- as.numeric(substring(link.lanes.vdf, 1, 1))
+    link.lanes <- as.numeric(substring(link.lanes.vdf, 2, 3))/10
+
+    # Read ul1 and ul2
+    seek(infile, where = file0[16, 1] * 4, origin = "start")
+    seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
+    link.ul1 <- readBin(infile, real(), mlink, 4)
+    seek(infile, where = (file0[16, 1] * 4 + mscen * mlink * 
+        4), origin = "start")
+    seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
+    link.ul2 <- readBin(infile, real(), mlink, 4)
+
+    # Read timau
+    seek(infile, where = file0[17, 1] * 4, origin = "start")
+    seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
+    timau <- readBin(infile, real(), mlink, 4)
+    
+    # Read volau
+    seek(infile, where = file0[18, 1] * 4, origin = "start")
+    seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
+    volau <- readBin(infile, real(), mlink, 4)
+    
+    close(infile)
+    list(node.data, pointer.to.j.node, j.node, length = link.length, 
+        type = link.type, vdf = link.vdf, lanes = link.lanes, 
+        ul1 = link.ul1, ul2 = link.ul2, timau = timau, volau = volau)
+    }
+
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

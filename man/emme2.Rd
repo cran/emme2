@@ -74,7 +74,12 @@
      is to be written to the databank.  
      \cr\cr
      For details about the EMME/2 internal file structure refer to Appendix C 
-     of the EMME/2 User's Manual.}
+     of the EMME/2 User's Manual.
+     \cr\cr
+     Steve Hansen <\email{Hansens@metro.dst.or.us}> helped with \code{read.mf} and \code{write.mf}
+     \cr\cr
+     Brian Gregor <\email{Brian.J.GREGOR@odot.state.or.us}> helped with \code{read.link.data}
+     }
 \value{
  	\tabular{lll}{
 	read.file0 \tab	data.frame \tab EMME/2 internal file offsets \cr
