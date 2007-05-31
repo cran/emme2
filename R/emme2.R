@@ -396,10 +396,12 @@ read.mf <- function(numname, bank, file0, mcent, mat.dir) {
 	#+++++++++++++++++++++++++++++++++
 	#Start Steve Hansen Edit
 	#+++++++++++++++++++++++++++++++++
-	mf.offset <- mcent*mcent
-	iterations <- number-1
-	for (i in 1:iterations){
-		seek(infile, where=mf.offset*4, origin="current")
+	if(number>1){
+		mf.offset <- mcent*mcent
+		iterations <- number-1
+		for (i in 1:iterations){
+			seek(infile, where=mf.offset*4, origin="current")
+		}
 	}
 	#+++++++++++++++++++++++++++++++++
 	#End Steve Hansen Edit
@@ -448,14 +450,15 @@ write.mf <- function(data, numname, bank, file0, mcent, mmat, mat.dir, newname=N
 	#+++++++++++++++++++++++++++++++++
 	#Start Steve Hansen Edit
 	#+++++++++++++++++++++++++++++++++
-	mf.offset <- mcent*mcent
-	iterations <- number-1
-	for (i in 1:iterations){
-		seek(outfile, where=mf.offset*4, origin="current", rw="write")
+	if(number>1){
+		mf.offset <- mcent*mcent
+		iterations <- number-1
+		for (i in 1:iterations){
+			seek(outfile, where=mf.offset*4, origin="current", rw="write")
+		}
 	}
 	#+++++++++++++++++++++++++++++++++
 	#End Steve Hansen Edit
-	#+++++++++++++++++++++++++++++++++
 
 	#If data is a matrix, then convert the matrix to vector form
 	if (is.matrix(data)) {
