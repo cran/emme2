@@ -518,13 +518,14 @@ write.mf <- function(data, numname, bank, file0, mcent, mmat, mat.dir, newname=N
 	#+++++++++++++++++++++++++++++++++
 	#Start Steve Hansen Edit
 	#+++++++++++++++++++++++++++++++++
+	
 	## Write datestamp ##
 	#Seek to matrix directory file 60 position
 	mat.offset <- file0[60,1]
 	seek(outfile, where=mat.offset*4, origin="start", rw="write")
 	#Seek to part of matrix directory file that stores the timestamp for matrix_number
 	seek(outfile, where=mmat*28+(numname-1)*4, origin="current", rw="write")
-	emme2time <- get_emme2_time(Sys.time())
+	emme2time <- get.emme2.time(Sys.time())
 	writeBin(as.integer(emme2time), outfile, 4)	
 	#+++++++++++++++++++++++++++++++++
 	#End Steve Hansen Edit
@@ -689,3 +690,19 @@ formatMf <- function(data, file1) {
      rbind(cbind(m1, m2), cbind(m3,m4)) 
 }
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# FUNCTION TO CREATE AN INTEGER BASED ON THE EMME2 FORMULA FOR A DATESTAMP
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+get.emme2.time <- function(timestamp){
+  #first split date from time
+  date<-unlist(strsplit(as.character(timestamp)," "))[1]
+  time<-unlist(strsplit(as.character(timestamp)," "))[2]
+  year<-as.integer(unlist(strsplit(as.character(date),"-"))[1])
+  month<-as.integer(unlist(strsplit(as.character(date),"-"))[2])
+  day<-as.integer(unlist(strsplit(as.character(date),"-"))[3])
+  hour<-as.integer(unlist(strsplit(as.character(time),":"))[1])
+  minute<-as.integer(unlist(strsplit(as.character(time),":"))[2])
+  second<-as.integer(unlist(strsplit(as.character(time),":"))[3])
+  emme2time<-second+60*(minute+60*(hour+24*(day-1+31*(month-1+12*(year-1990)))))
+  emme2time
+}

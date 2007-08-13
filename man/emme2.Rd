@@ -12,6 +12,7 @@
 \alias{plotLinks}
 \alias{ftnode}
 \alias{formatMf}
+\alias{get.emme2.time}
 
 \title{Read and Write to an EMME/2 databank}
 \description{This package includes functions to read and write to an EMME/2 databank.}
@@ -30,6 +31,7 @@
      plotLinks(tofrom, nodes, title, ...)
      ftnode(node.data, outgoing.links, jnode, mlink)
      formatMf(data, file1)
+     get.emme2.time(timestamp)
 }
 \arguments{
 	\item{bank}{String of the EMME/2 databank file name}
@@ -58,6 +60,7 @@
 	\item{outgoing.links}{EMME/2 internal file 9 vector from read.link.data}
 	\item{jnode}{EMME/2 internal file 11 vector from read.link.data}
 	\item{\dots}{graphical parameters can be given as arguments to plot}
+	\item{timestamp}{\code{Sys.time()}}
 }
 
 \details{
@@ -94,7 +97,8 @@
 	read.nodes \tab data.frame \tab EMME/2 node data \cr
 	plotLinks \tab NA \tab Plots EMME/2 network \cr
 	ftnode \tab named numeric \tab EMME/2 link data in from to node format \cr
-     formatMf \tab matrix \tab EMME/2 matrix with padded default values
+        formatMf \tab matrix \tab EMME/2 matrix with padded default values \cr
+        get.emme2.time \tab integer \tab EMME/2 timestamp
  	} 
 }
 
