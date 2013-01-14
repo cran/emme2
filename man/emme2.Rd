@@ -13,9 +13,12 @@
 \alias{ftnode}
 \alias{formatMf}
 \alias{get.emme2.time}
+\alias{MFBatchFetch}
+\alias{MFFetch}
+\alias{MFDir}
 
 \title{Read and Write to an EMME/2 databank}
-\description{This package includes functions to read and write to an EMME/2 databank.}
+\description{This package includes functions to read and write to an EMME/2 or EMME/3 databank.}
 
 \usage{
      read.file0(bank)
@@ -32,11 +35,14 @@
      ftnode(node.data, outgoing.links, jnode, mlink)
      formatMf(data, file1)
      get.emme2.time(timestamp)
+     MFDir(bank)
+     MFFetch(bank, matrixname, varlongname=NULL, valsonly=NULL)
+     MFBatchFetch(bank, matrixlist, useshortnames=FALSE)
 }
 \arguments{
 	\item{bank}{String of the EMME/2 databank file name}
 	\item{file0}{Databank metadata data frame}
-     \item{file1}{Databank global and scenario parameters}
+	\item{file1}{Databank global and scenario parameters}
 	\item{mmat}{Maximum number of matrices}
 
 	\item{numname}{mf name as a string or mf number to read in or write to}
@@ -61,6 +67,12 @@
 	\item{jnode}{EMME/2 internal file 11 vector from read.link.data}
 	\item{\dots}{graphical parameters can be given as arguments to plot}
 	\item{timestamp}{\code{Sys.time()}}
+	
+	\item{matrixname}{Short 6-digit name of matrix}
+	\item{varlongname}{A optional human-readable name for the matrix}
+	\item{valsonly}{Return only values, and not the O and D IDs when reshaping the data}
+	\item{matrixlist}{A list of matrixnames}
+	\item{useshortnames}{Use EMME matrix shortnames}
 }
 
 \details{
@@ -74,15 +86,21 @@
      the padding default values - and \code{write.mf} writes the full matrix - 
      the data matrix plus the padded values.  It is important then to call 
      \code{formatMf} before \code{write.mf} in order to format the matrix that 
-     is to be written to the databank.  
+     is to be written to the databank.
      \cr\cr
      For details about the EMME/2 internal file structure refer to Appendix C 
      of the EMME/2 User's Manual.
      \cr\cr
+     This package does not support reading/writing to the EMME/4 databank since
+     the format has changed significantly and it is no longer published.  Use
+     the Python Modeller API instead.
+     \cr\cr
      Steve Hansen <\email{Hansens@metro.dst.or.us}> helped with \code{read.mf} and \code{write.mf}
      \cr\cr
      Brian Gregor <\email{Brian.J.GREGOR@odot.state.or.us}> helped with \code{read.link.data}
-     }
+     \cr\cr
+     Peter Schmiedeskamp <\email{peter@thoughtspot.net}> wrote \code{MFDir, MFFetch, and MFBatchFetch}
+}
 \value{
  	\tabular{lll}{
 	read.file0 \tab	data.frame \tab EMME/2 internal file offsets \cr
@@ -97,8 +115,11 @@
 	read.nodes \tab data.frame \tab EMME/2 node data \cr
 	plotLinks \tab NA \tab Plots EMME/2 network \cr
 	ftnode \tab named numeric \tab EMME/2 link data in from to node format \cr
-        formatMf \tab matrix \tab EMME/2 matrix with padded default values \cr
-        get.emme2.time \tab integer \tab EMME/2 timestamp
+	formatMf \tab matrix \tab EMME/2 matrix with padded default values \cr
+	get.emme2.time \tab integer \tab EMME/2 timestamp \cr
+	MFDir \tab data.frame \tab Returns a directory from a databank \cr  
+	MFFetch \tab data.frame \tab Returns EMME/2 mf values as a long data.frame \cr  
+	MFBatchFetch \tab data.frame \tab Returns EMME/2 mf values for several matrices as a joined data.frame \cr
  	} 
 }
 
@@ -148,6 +169,15 @@
      
      #Function call to format a mf to write to the databank
      mf2 <- formatMf(mf2, file1)
+     
+     #Convenience function to get a directory of a databank
+     dir.df <- MFDir("emme2/emme2ban")
+     
+     #Convenience function to fetch and format an mf as a long data.frame
+     mf.df <- MFFetch("emme2/emme2ban", "aau1tm", varlongname="my.descriptive.var.name")
+     
+     #Convenience function to fetch, format, and merge multiple mf as a long data.frame     
+     mmf.df <- MFBatchFetch("emme2/emme2ban", c("aau1tm", "aau2tm"))
      }
 }
 

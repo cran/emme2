@@ -6,6 +6,10 @@
 # Updated: Ben Stabler 6/17/03
 # Updated: Ben Stabler 8/3/04
 
+# Updated 1/14/2013 to replace real() with double(), added NAMESPACE,
+#  updated documentation since doesn't work for EMME/4 banks, and
+#  added Peter Schmiedeskamp's functions 
+
 # Copyright (C) 2002  Oregon Department of Transportation
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -282,7 +286,7 @@ read.ms <- function(bank, file0) {
 	seek(infile, where=mat.offset*4, origin="start")
 	
 	#Read in the matrix data
-	ms <- readBin(infile, real(), file0[61,3], 4)
+	ms <- readBin(infile, double(), file0[61,3], 4)
 	names(ms) <- 1:length(ms)
 		
 	#Close the infile connection and return the matrix
@@ -321,7 +325,7 @@ read.mo <- function(numname, bank, file0, mcent, mat.dir) {
 	seek(infile, where=specific.offset*4, origin="current")
 	
 	#Read in the matrix data
-	mo <- readBin(infile, real(), mcent, 4)
+	mo <- readBin(infile, double(), mcent, 4)
 		
 	#Close the infile connection and return the matrix
 	close(infile)
@@ -359,7 +363,7 @@ read.md <- function(numname, bank, file0, mcent, mat.dir) {
 	seek(infile, where=specific.offset*4, origin="current")
 	
 	#Read in the matrix data
-	md <- readBin(infile, real(), mcent, 4)
+	md <- readBin(infile, double(), mcent, 4)
 		
 	#Close the infile connection and return the matrix
 	close(infile)
@@ -389,6 +393,8 @@ read.mf <- function(numname, bank, file0, mcent, mat.dir) {
 	if (is.character(numname)) {
 		numname <- gsub(" +$","",numname)
 		number <- which(mat.dir$mf[,1]==numname)
+		if(length(number)>1) {print(paste("Warning, non-unique matrix. Using the first: ", numname))}
+		number <- number[1]
 		if (length(number)==0) { stop("Matrix Not Found") }
 	} else { number <- numname }
 	
@@ -407,7 +413,7 @@ read.mf <- function(numname, bank, file0, mcent, mat.dir) {
 	#End Steve Hansen Edit
 	#+++++++++++++++++++++++++++++++++
 	#Read in the matrix data
-	mf.temp <- readBin(infile, real(), mcent*mcent, 4)
+	mf.temp <- readBin(infile, double(), mcent*mcent, 4)
 	mf <- matrix(mf.temp, mcent, mcent, byrow=T)
 		
 	#Close the infile connection and return the matrix
@@ -466,7 +472,7 @@ write.mf <- function(data, numname, bank, file0, mcent, mmat, mat.dir, newname=N
 	}
 	
 	#Write mfnumber to the databank
-	writeBin(as.real(data), outfile, 4)
+	writeBin(as.double(data), outfile, 4)
 		
 	#Seek to matrix directory file 60 position
 	mat.offset <- file0[60,1]
@@ -584,21 +590,21 @@ read.link.data <- function (bank, scen.num, file0, mscen, mlink, mnode){
     # Read ul1 and ul2
     seek(infile, where = file0[16, 1] * 4, origin = "start")
     seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
-    link.ul1 <- readBin(infile, real(), mlink, 4)
+    link.ul1 <- readBin(infile, double(), mlink, 4)
     seek(infile, where = (file0[16, 1] * 4 + mscen * mlink * 
         4), origin = "start")
     seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
-    link.ul2 <- readBin(infile, real(), mlink, 4)
+    link.ul2 <- readBin(infile, double(), mlink, 4)
 
     # Read timau
     seek(infile, where = file0[17, 1] * 4, origin = "start")
     seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
-    timau <- readBin(infile, real(), mlink, 4)
+    timau <- readBin(infile, double(), mlink, 4)
     
     # Read volau
     seek(infile, where = file0[18, 1] * 4, origin = "start")
     seek(infile, where = (scen.num - 1) * mlink * 4, origin = "current")
-    volau <- readBin(infile, real(), mlink, 4)
+    volau <- readBin(infile, double(), mlink, 4)
     
     close(infile)
     list(node.data, pointer.to.j.node, j.node, length = link.length, 
@@ -631,11 +637,11 @@ read.nodes <- function(bank, scen.num, file0, mscen, mlink, mnode) {
 	#Read in X and Y coordinates of nodes (file7)
 	seek(infile, where=file0[7,1]*4, origin="start")
 	seek(infile, where=(scen.num-1)*mnode*4, origin="current")
-	x <- readBin(infile,real(), mnode, 4)
+	x <- readBin(infile,double(), mnode, 4)
 	
 	seek(infile, where=file0[7,1]*4, origin="start")
 	seek(infile, where=(scen.num-1)*mnode*4+mscen*mnode*4, origin="current")
-	y <- readBin(infile,real(), mnode, 4)
+	y <- readBin(infile,double(), mnode, 4)
 	
 	close(infile)
 	nodes <- data.frame(id=node.data, x=x, y=y)
@@ -705,4 +711,77 @@ get.emme2.time <- function(timestamp){
   second<-as.integer(unlist(strsplit(as.character(time),":"))[3])
   emme2time<-second+60*(minute+60*(hour+24*(day-1+31*(month-1+12*(year-1990)))))
   emme2time
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# CONVENIENCE FUNCTIONS TO RETURN MATRICES AND DIRECTORIES IN DATA.FRAME FORMAT
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Batch read a list of emme matrix names (short version), and return a merged data.frame
+# DANGER: This function is not exactly memory-efficient. Don't attempt on low-memory systems without refactoring.
+MFBatchFetch <- function(bank, matrixlist, useshortnames=FALSE) {
+  # Fetch the first matrix off the list
+  # (assumes first matrix is representative of the those following)
+  print(matrixlist[1])
+  
+  if(useshortnames==TRUE){
+    df <- MFFetch(bank, matrixlist[1],varlongname=matrixlist[1])
+  }else{
+    df <- MFFetch(bank, matrixlist[1])
+  }
+  
+  # merging as opposed to cbind is slow, but enforces some sort of sanity checking
+  for(m in matrixlist[-1]) {
+    print(m)
+    
+    if(useshortnames==TRUE){
+      new <- MFFetch(bank, m, varlongname=m)
+    } else {
+      new <- MFFetch(bank, m)
+    }
+    
+    df <- merge(df, new, by=intersect(names(df), names(new)))
+  }
+  return(df)
+}
+
+# Return the named matrix as a neatly-formatted dataframe
+MFFetch <- function(bank, matrixname, varlongname=NULL, valsonly=NULL) {
+ 
+  library(reshape)
+
+  file0 <- read.file0(bank)
+  file1 <- read.file1(bank, file0)
+  mat.dir <- read.matdir(bank, file0, file1$global["mmat"])
+  mf <- read.mf(matrixname, bank, file0, file1$global["mcent"], mat.dir)
+  mf <- melt(mf,)
+  
+  if(is.null(varlongname)) {
+    # Convert this to a dataframe to avoid breaking my brain
+    dirdf <- data.frame(mat.dir$mf, stringsAsFactors=FALSE)
+    # Sometimes this won't be unique, hense the "[1]"
+    varlongname <- dirdf[dirdf$name==matrixname, 2][1]
+    varlongname <- gsub("\\s+", "_", varlongname)
+    varlongname <- gsub("-", "_", varlongname)
+    varlongname <- gsub("_+", "_", varlongname)
+  }
+  
+  names(mf) <- c("orig", "dest", varlongname)
+  
+  if(is.null(valsonly)) {
+    mf
+  } else {
+    mf[-c(1,2)]
+  }
+}
+
+# Return a data.frame containing an emmebank's directory listing
+MFDir <- function(bank) {
+  # Boilerplate file index reading
+  file0 <- read.file0(bank)
+  file1 <- read.file1(bank, file0)
+  # Return a more useful data type and filter out null entries
+  mat.dir <- data.frame(read.matdir(bank, file0, file1$global["mmat"])$mf, stringsAsFactors=FALSE)
+  mat.dir <- mat.dir[mat.dir$name != "", ]
+  
+  return(mat.dir)
 }
